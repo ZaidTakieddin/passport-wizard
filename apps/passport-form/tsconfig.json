@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["@rsbuild/core/types"]
+    "types": ["@rsbuild/core/types", "node"]
   },
-  "include": ["src"]
+  "include": ["src", "rsbuild.config.ts"]
 }
