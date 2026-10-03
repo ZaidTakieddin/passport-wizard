@@ -1,0 +1,172 @@
+/* Same width as the remote form, so the steps, form and buttons line up. */
+.wizard {
+  display: grid;
+  gap: 1.5rem;
+  max-width: 40rem;
+}
+
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-muted);
+}
+
+.step[data-status='current'] {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.stepNumber {
+  display: inline-grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.step[data-status='current'] .stepNumber {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.step[data-status='complete'] .stepNumber {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.heading {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.25;
+}
+
+/* Focus is moved here programmatically on step change; the heading itself isn't interactive. */
+.heading:focus {
+  outline: none;
+}
+
+.stepForm {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.hint {
+  flex: 1 1 100%;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  text-align: right;
+}
+
+.button {
+  min-height: 2.75rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--radius);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.primary {
+  border: 1px solid var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.primary:hover:not(:disabled) {
+  border-color: var(--color-accent-hover);
+  background: var(--color-accent-hover);
+}
+
+.secondary {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+/* Full-width, stacked buttons on phones. */
+@media (max-width: 35.99rem) {
+  .actions .button {
+    flex: 1 1 100%;
+  }
+
+  .hint {
+    text-align: left;
+  }
+}
+
+.result {
+  display: grid;
+  gap: 1rem;
+}
+
+.resultText,
+.note {
+  margin: 0;
+}
+
+.note {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+.payload {
+  max-height: 28rem;
+  margin: 0;
+  padding: 1rem;
+  overflow: auto;
+  border: 1px solid var(--color-frame);
+  border-radius: 0.5rem;
+  background: var(--color-surface);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.payload:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
