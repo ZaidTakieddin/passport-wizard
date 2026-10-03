@@ -1,0 +1,110 @@
+import type {
+  PassportDocument,
+  PassportDocumentMimeType,
+  PassportFormState,
+  PassportFormValues,
+} from 'passport-contract';
+import { z } from 'zod';
+
+export const ACCEPTED_MIME_TYPES = [
+  'application/pdf',
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+] as const satisfies readonly PassportDocumentMimeType[];
+
+export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+export const EMPTY_PASSPORT_VALUES: PassportFormValues = {
+  passportNumber: '',
+  firstName: '',
+  lastName: '',
+  issueDate: '',
+  expiryDate: '',
+  document: null,
+};
+
+export function isAcceptedMimeType(type: string): type is PassportDocumentMimeType {
+  return (ACCEPTED_MIME_TYPES as readonly string[]).includes(type);
+}
+
+// Both values are YYYY-MM-DD, so comparing the strings compares the calendar dates
+// without any time zone conversion.
+export function isExpiryAfterIssue(issueDate: string, expiryDate: string): boolean {
+  return expiryDate > issueDate;
+}
+
+/** The day after `date` as YYYY-MM-DD, or undefined if `date` is not a full date. */
+export function nextDay(date: string): string | undefined {
+  if (!ISO_DATE.test(date)) return undefined;
+  const day = new Date(`${date}T00:00:00Z`);
+  day.setUTCDate(day.getUTCDate() + 1);
+  return day.toISOString().slice(0, 10);
+}
+
+/** Checks a file selection before it is read. Returns an error message, or null if it is acceptable. */
+export function getFileSelectionError(files: ArrayLike<Pick<File, 'type' | 'size'>>): string | null {
+  if (files.length !== 1) return 'Upload one file only.';
+  const file = files[0];
+  if (!isAcceptedMimeType(file.type)) return 'Upload a PDF, PNG or JPEG file.';
+  if (file.size === 0) return 'This file is empty. Choose another file.';
+  if (file.size > MAX_FILE_SIZE_BYTES) return 'The file must be 5 MB or smaller.';
+  return null;
+}
+
+const requiredText = (message: string) => z.string().trim().min(1, message);
+
+const requiredDate = (message: string) =>
+  z.string().min(1, message).regex(ISO_DATE, 'Enter a complete date.');
+
+const documentSchema = z
+  .custom<PassportDocument | null>()
+  .refine((document) => document !== null, 'Upload your passport document.')
+  .refine(
+    (document) => document === null || isAcceptedMimeType(document.mimeType),
+    'Upload a PDF, PNG or JPEG file.',
+  )
+  .refine((document) => document === null || document.base64.length > 0, 'This file is empty. Choose another file.');
+
+/** Every rule for the passport form. Used for inline errors and for the validity reported to the host. */
+export const passportSchema = z
+  .object({
+    passportNumber: requiredText('Enter your passport number.'),
+    firstName: requiredText('Enter your first name.'),
+    lastName: requiredText('Enter your last name.'),
+    issueDate: requiredDate('Enter the issue date.'),
+    expiryDate: requiredDate('Enter the expiry date.'),
+    document: documentSchema,
+  })
+  .superRefine(({ issueDate, expiryDate }, ctx) => {
+    if (ISO_DATE.test(issueDate) && ISO_DATE.test(expiryDate) && !isExpiryAfterIssue(issueDate, expiryDate)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['expiryDate'],
+        message: 'The expiry date must be after the issue date.',
+      });
+    }
+  });
+
+function trimValues(values: PassportFormValues): PassportFormValues {
+  return {
+    ...values,
+    passportNumber: values.passportNumber.trim(),
+    firstName: values.firstName.trim(),
+    lastName: values.lastName.trim(),
+  };
+}
+
+/** Derives what the form reports to the host from its current values. */
+export function getPassportFormState(values: PassportFormValues): PassportFormState {
+  const result = passportSchema.safeParse(values);
+  if (result.success) {
+    const { document } = result.data;
+    if (document) {
+      return { valid: true, data: { ...result.data, document } };
+    }
+  }
+  return { valid: false, data: trimValues(values) };
+}

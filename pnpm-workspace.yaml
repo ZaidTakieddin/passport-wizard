@@ -1,5 +1,6 @@
 packages:
   - apps/*
+  - packages/*
 
 # Single source of truth for versions used by more than one workspace package.
 # Apps reference these with "catalog:" so the host and the remote can never

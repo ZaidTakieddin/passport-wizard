@@ -1,0 +1,9 @@
+/* Base styles for the remote's standalone page only. Imported by index.tsx, never by the
+   exposed PassportForm, so they don't reach the host. */
+body {
+  margin: 0;
+  background: #f3f5f8;
+  color: #1a2230;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+}
