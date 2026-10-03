@@ -1,0 +1,16 @@
+{
+  "name": "passport-wizard",
+  "private": true,
+  "packageManager": "pnpm@12.8.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "pnpm --recursive --parallel run dev",
+    "dev:passport-form": "pnpm --filter passport-form run dev",
+    "dev:host-app": "pnpm --filter host-app run dev",
+    "build": "pnpm --recursive run build",
+    "preview": "pnpm --recursive --parallel run preview",
+    "typecheck": "pnpm --recursive run typecheck"
+  }
+}

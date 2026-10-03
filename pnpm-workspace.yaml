@@ -1,0 +1,15 @@
+packages:
+  - apps/*
+
+# Single source of truth for versions used by more than one workspace package.
+# Apps reference these with "catalog:" so the host and the remote can never
+# drift onto different React versions.
+catalog:
+  react: 18.3.1
+  react-dom: 18.3.1
+  '@types/react': ^18.3.31
+  '@types/react-dom': ^18.3.7
+  '@rsbuild/core': ^2.2.11
+  '@rsbuild/plugin-react': ^2.1.1
+  # Tilde: TypeScript minors can introduce breaking changes.
+  typescript: ~6.0.3

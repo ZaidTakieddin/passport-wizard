@@ -1,0 +1,7 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["@rsbuild/core/types"]
+  },
+  "include": ["src"]
+}

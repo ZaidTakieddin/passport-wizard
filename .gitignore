@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Logs
+*.log*
+
+# Local overrides and secrets
+*.local
+.env*.local
+
+# OS / IDE / local tooling
+.DS_Store
+.idea/
+.claude/
+.vscode/*
+!.vscode/extensions.json
+
+# Rspack profiling
+.rspack-profile-*/
