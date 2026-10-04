@@ -1,6 +1,6 @@
 import { useId, useState } from 'react';
 import styles from './IdInfoFields.module.css';
-import { NATIONALITIES, validateIdInfo, type IdInfoValues } from './idInfo';
+import { EMIRATES_ID_EXAMPLE, NATIONALITIES, validateIdInfo, type IdInfoValues } from './idInfo';
 
 type IdInfoFieldsProps = {
   values: IdInfoValues;
@@ -34,18 +34,22 @@ export default function IdInfoFields({ values, onChange }: IdInfoFieldsProps) {
 
         <div className={styles.field}>
           <label htmlFor={idNumberId} className={styles.label}>
-            ID number
+            Emirates ID number
           </label>
+          <p id={`${idNumberId}-hint`} className={styles.hint}>
+            15 digits starting with 784, e.g. {EMIRATES_ID_EXAMPLE}
+          </p>
           <input
             id={idNumberId}
             type="text"
+            inputMode="numeric"
             className={styles.control}
             value={values.idNumber}
             required
             autoComplete="off"
             spellCheck={false}
             aria-invalid={Boolean(idNumberError)}
-            aria-describedby={idNumberError ? `${idNumberId}-error` : undefined}
+            aria-describedby={idNumberError ? `${idNumberId}-hint ${idNumberId}-error` : `${idNumberId}-hint`}
             onChange={(event) => {
               onChange('idNumber', event.target.value);
               markTouched('idNumber');

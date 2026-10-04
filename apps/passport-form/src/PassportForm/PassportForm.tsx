@@ -37,8 +37,10 @@ export default function PassportForm({ onChange, initialValue }: PassportFormPro
         <TextField
           id={`${id}-passportNumber`}
           label="Passport number"
+          hint="Up to 9 letters and digits, as printed on your passport."
           error={errors.passportNumber?.message}
           registration={register('passportNumber')}
+          uppercase
           autoComplete="off"
           autoCapitalize="characters"
           spellCheck={false}

@@ -82,6 +82,19 @@ export function getFileSelectionError(files: ArrayLike<Pick<File, 'type' | 'size
 
 const requiredText = (message: string) => z.string().trim().min(1, message);
 
+// ICAO Doc 9303 Part 4: the passport number occupies positions 1–9 of the machine-readable
+// zone, so it has at most 9 characters from A–Z and 0–9. Spaces and special characters are
+// not part of it. Lower-case input is accepted and stored in upper case.
+const PASSPORT_NUMBER_MAX_LENGTH = 9;
+
+const passportNumberSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .min(1, 'Enter your passport number.')
+  .regex(/^[A-Z0-9]*$/, 'Use letters and digits only, with no spaces or symbols.')
+  .max(PASSPORT_NUMBER_MAX_LENGTH, `A passport number has at most ${PASSPORT_NUMBER_MAX_LENGTH} characters.`);
+
 const requiredDate = (message: string) =>
   z.string().min(1, message).regex(ISO_DATE, 'Enter a complete date.');
 
@@ -101,7 +114,7 @@ const documentSchema = z
 /** Every rule for the passport form. Used for inline errors and for the validity reported to the host. */
 export const passportSchema = z
   .object({
-    passportNumber: requiredText('Enter your passport number.'),
+    passportNumber: passportNumberSchema,
     firstName: requiredText('Enter your first name.'),
     lastName: requiredText('Enter your last name.'),
     issueDate: requiredDate('Enter the issue date.'),
@@ -118,10 +131,11 @@ export const passportSchema = z
     }
   });
 
-function trimValues(values: PassportFormValues): PassportFormValues {
+// Same normalisation as the schema applies to valid data, so reports look alike either way.
+function normalizeValues(values: PassportFormValues): PassportFormValues {
   return {
     ...values,
-    passportNumber: values.passportNumber.trim(),
+    passportNumber: values.passportNumber.trim().toUpperCase(),
     firstName: values.firstName.trim(),
     lastName: values.lastName.trim(),
   };
@@ -136,5 +150,5 @@ export function getPassportFormState(values: PassportFormValues): PassportFormSt
       return { valid: true, data: { ...result.data, document } };
     }
   }
-  return { valid: false, data: trimValues(values) };
+  return { valid: false, data: normalizeValues(values) };
 }

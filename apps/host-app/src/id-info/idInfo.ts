@@ -36,20 +36,38 @@ function isNationalityCode(value: string): value is NationalityCode {
   return NATIONALITIES.some((nationality) => nationality.code === value);
 }
 
-function hasIdNumber(values: IdInfoValues): boolean {
-  return values.idNumber.trim().length > 0;
+// Emirates ID: 15 digits laid out as 784-YYYY-NNNNNNN-N, accepted with or without separators.
+// 784 is the UAE's ISO 3166 numeric code. YYYY is usually the holder's birth year, but not
+// always, so it isn't checked as a date. The last digit's algorithm isn't published by the
+// issuing authority, so it isn't checked either: a guessed checksum would reject real IDs.
+const EMIRATES_ID = /^784[-\s]?(\d{4})[-\s]?(\d{7})[-\s]?(\d)$/;
+
+export const EMIRATES_ID_EXAMPLE = '784-1980-1234567-8';
+
+/** The Emirates ID in its printed form (784-YYYY-NNNNNNN-N), or the reason it isn't valid. */
+function parseEmiratesId(value: string): { idNumber: string } | { error: string } {
+  const trimmed = value.trim();
+  if (!trimmed) return { error: 'Enter your Emirates ID number.' };
+
+  const match = EMIRATES_ID.exec(trimmed);
+  if (!match) return { error: `Enter the 15 digits that start with 784, e.g. ${EMIRATES_ID_EXAMPLE}.` };
+
+  const [, year, sequence, lastDigit] = match;
+  return { idNumber: `784-${year}-${sequence}-${lastDigit}` };
 }
 
 export function validateIdInfo(values: IdInfoValues): IdInfoErrors {
   const errors: IdInfoErrors = {};
-  if (!hasIdNumber(values)) errors.idNumber = 'Enter your ID number.';
+  const emiratesId = parseEmiratesId(values.idNumber);
+  if ('error' in emiratesId) errors.idNumber = emiratesId.error;
   if (!isNationalityCode(values.nationality)) errors.nationality = 'Select your nationality.';
   return errors;
 }
 
-/** The trimmed ID details when every rule passes, otherwise null. */
+/** The ID details as they go into the payload when every rule passes, otherwise null. */
 export function parseIdInfo(values: IdInfoValues): IdInfo | null {
+  const emiratesId = parseEmiratesId(values.idNumber);
   const { nationality } = values;
-  if (!hasIdNumber(values) || !isNationalityCode(nationality)) return null;
-  return { idNumber: values.idNumber.trim(), nationality };
+  if ('error' in emiratesId || !isNationalityCode(nationality)) return null;
+  return { idNumber: emiratesId.idNumber, nationality };
 }
