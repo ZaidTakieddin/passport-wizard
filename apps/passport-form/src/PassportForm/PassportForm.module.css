@@ -4,7 +4,7 @@
 .form {
   --pf-text: #1a2230;
   --pf-muted: #576172;
-  --pf-border: #b6bfcb;
+  --pf-border: #7d8899;
   --pf-frame: #dde2e8;
   --pf-surface: #ffffff;
   --pf-accent: #1d4ed8;
@@ -33,7 +33,7 @@
   .form {
     --pf-text: #e3e8ee;
     --pf-muted: #9aa6b5;
-    --pf-border: #4a5563;
+    --pf-border: #667386;
     --pf-frame: #2a3441;
     --pf-surface: #161d26;
     --pf-accent: #6b9cff;
@@ -113,7 +113,7 @@
 
 .input:focus-visible,
 .secondaryButton:focus-visible,
-.fileInput:focus-visible + .fileButton {
+.fileButton:has(.fileInput:focus-visible) {
   outline: 2px solid var(--pf-accent);
   outline-offset: 2px;
 }
@@ -137,7 +137,7 @@
   align-items: center;
 }
 
-/* Visually hidden but still focusable; the label below acts as its button. */
+/* Visually hidden but still focusable; the label wrapping it acts as its button. */
 .fileInput {
   position: absolute;
   width: 1px;
@@ -164,6 +164,8 @@
 }
 
 .fileButton {
+  /* Anchors the visually hidden input it wraps. */
+  position: relative;
   border: 1px solid var(--pf-accent);
   background: var(--pf-accent);
   color: var(--pf-on-accent);

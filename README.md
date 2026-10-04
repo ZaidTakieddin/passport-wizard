@@ -240,6 +240,25 @@ All wizard state lives in one reducer: `host-app/src/wizard/wizardReducer.ts`.
 - Transitions are also checked in the reducer: `next` and `submitted` are ignored when they aren't allowed. A disabled button isn't the only guard.
 - On each step change, focus moves to the new step's heading.
 
+## Accessibility and responsive layout
+
+**What's in place:**
+
+- **Labels and errors:** every field has a visible label, a hint where useful, and an inline error. Invalid fields get `aria-invalid`; hints and errors are linked with `aria-describedby`; errors are announced through polite live regions. Required fields are marked with `required` or `aria-required`.
+- **File input:** visually hidden but focusable, with exactly one label. It's named "Passport document", and its focus ring shows on the visible Choose file button.
+- **Keyboard:** the whole wizard works by keyboard alone, in a logical order, with a visible focus ring on every control. Focus moves to each step's heading, and after Try again it stays on the form area instead of dropping to the page.
+- **Structure:** `<html lang="en">`, header and main landmarks, `fieldset`/`legend` for each form, and a progress list marking the current step with `aria-current="step"`.
+- **Contrast:** at least 4.5:1 for text and 3:1 for field borders and focus rings (WCAG 1.4.11), in both light and dark themes.
+- **Responsive layout:** a single column on phones, with field pairs side by side from 36rem. No horizontal scrolling down to 320px. Touch targets are at least 44px, and Back and Submit stack full-width on narrow screens.
+
+**How it was checked:**
+
+- **axe-core 4.13** (WCAG 2.2 AA + best practices) on every screen, in light and dark mode: 0 violations. The screens were Step 1 empty, Step 1 with errors, Step 2, the result, the remote-failure fallback, and the remote's standalone page.
+- **Contrast** computed for every color pair.
+- **A keyboard-only walkthrough** with real key presses.
+- **Overflow checks** at 320, 375, 768 and 1280px.
+- No automated screen-reader test has been run.
+
 ## JSON payload
 
 Built by `host-app/src/submission/buildPayload.ts`. It copies each field explicitly, so the keys and their order are exactly:

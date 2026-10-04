@@ -97,28 +97,29 @@ export default function DocumentField({ id, control }: DocumentFieldProps) {
 
   return (
     <div className={styles.field}>
-      <label id={labelId} htmlFor={id} className={styles.label}>
+      {/* Names the input through aria-labelledby, so the input has a single <label>: the button below. */}
+      <span id={labelId} className={styles.label}>
         Passport document
-      </label>
+      </span>
       <p id={hintId} className={styles.hint}>
         One PDF, PNG or JPEG file, up to 5 MB.
       </p>
       <div className={styles.fileRow}>
-        <input
-          ref={inputRef}
-          id={id}
-          name={field.name}
-          type="file"
-          accept={ACCEPT}
-          className={styles.fileInput}
-          aria-labelledby={labelId}
-          aria-describedby={[hintId, statusId, error ? errorId : ''].filter(Boolean).join(' ')}
-          aria-invalid={Boolean(error)}
-          aria-required="true"
-          onChange={handleFileChange}
-        />
-        {/* Visual trigger for the hidden input: clicking a label opens the file picker. */}
-        <label htmlFor={id} className={styles.fileButton}>
+        {/* The visible button wraps the hidden input, so clicking it opens the file picker. */}
+        <label className={styles.fileButton}>
+          <input
+            ref={inputRef}
+            id={id}
+            name={field.name}
+            type="file"
+            accept={ACCEPT}
+            className={styles.fileInput}
+            aria-labelledby={labelId}
+            aria-describedby={[hintId, statusId, error ? errorId : ''].filter(Boolean).join(' ')}
+            aria-invalid={Boolean(error)}
+            aria-required="true"
+            onChange={handleFileChange}
+          />
           {passportDocument ? 'Replace file' : 'Choose file'}
         </label>
         {passportDocument && (
