@@ -2,16 +2,10 @@ import { useEffect, useId, useReducer, useRef, type FormEvent } from 'react';
 import IdInfoFields from '../id-info/IdInfoFields';
 import RemotePassportForm from '../remote/RemotePassportForm';
 import SubmissionResult from '../submission/SubmissionResult';
+import { loadWizardState, usePersistWizardState } from './persistence';
 import StepIndicator from './StepIndicator';
 import styles from './Wizard.module.css';
-import {
-  canGoNext,
-  canSubmit,
-  getSubmissionPayload,
-  initialWizardState,
-  wizardReducer,
-  type WizardStep,
-} from './wizardReducer';
+import { canGoNext, canSubmit, getSubmissionPayload, wizardReducer, type WizardStep } from './wizardReducer';
 
 const STEP_TITLES: Record<WizardStep, string> = {
   passport: 'Your passport',
@@ -20,7 +14,8 @@ const STEP_TITLES: Record<WizardStep, string> = {
 };
 
 export default function Wizard() {
-  const [state, dispatch] = useReducer(wizardReducer, initialWizardState);
+  const [state, dispatch] = useReducer(wizardReducer, undefined, loadWizardState);
+  usePersistWizardState(state);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const previousStep = useRef(state.step);
   const nextHintId = useId();

@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@module-federation/enhanced": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"
   },

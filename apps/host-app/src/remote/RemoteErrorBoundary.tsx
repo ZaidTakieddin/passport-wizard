@@ -2,6 +2,7 @@ import { Component, type ReactNode } from 'react';
 
 type Props = {
   children: ReactNode;
+  onRetry: () => void;
 };
 
 type State = {
@@ -16,15 +17,18 @@ export default class RemoteErrorBoundary extends Component<Props, State> {
     return { error };
   }
 
+  private handleRetry = () => {
+    this.setState({ error: null });
+    this.props.onRetry();
+  };
+
   render() {
     if (this.state.error) {
       return (
         <div role="alert">
-          <p>The passport form couldn&apos;t be loaded. Please reload the page to try again.</p>
-          {/* The Module Federation runtime keeps a failed remote module failed for the life of
-              the page, so retrying in place rethrows the same error. A reload starts fresh. */}
-          <button type="button" onClick={() => window.location.reload()}>
-            Reload page
+          <p>The passport form couldn&apos;t be loaded. Check your connection and try again.</p>
+          <button type="button" onClick={this.handleRetry}>
+            Try again
           </button>
         </div>
       );

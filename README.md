@@ -33,6 +33,7 @@ React and ReactDOM are shared as single instances. The host provides them, and t
 apps/
   passport-form/                  App A: remote, port 3001
     rsbuild.config.ts             Module Federation remote config
+    index.html                    Page template (sets <html lang>)
     src/PassportForm/             The exposed component and its internals
       PassportForm.tsx            Form setup (React Hook Form + Zod)
       DocumentField.tsx           File selection, checks, base64 reading
@@ -41,15 +42,17 @@ apps/
     src/App.tsx                   Standalone page for developing the remote
   host-app/                       App B: host, port 3000
     rsbuild.config.ts             Module Federation host config
-    src/remote/                   Lazy loading, Suspense, error boundary
-    src/remotes.d.ts              Types for the federated import
-    src/wizard/                   Wizard reducer and UI
+    index.html                    Page template (sets <html lang>)
+    public/runtime-config.json    Optional runtime override of the remote's URL
+    src/remote/                   Remote loading, retry, runtime config
+    src/wizard/                   Wizard reducer, UI and refresh persistence
     src/id-info/                  ID form and its rules
     src/submission/               Payload builder and result view
 packages/
   passport-contract/              Types shared by both apps (no runtime code)
 pnpm-workspace.yaml               Workspaces + version catalog
 tsconfig.base.json                Shared strict TypeScript settings
+eslint.config.js, .prettierrc.json, .editorconfig, .gitattributes
 ```
 
 ## Getting started
@@ -67,29 +70,34 @@ pnpm dev               # starts both apps in parallel
 
 Open **http://localhost:3000** for the wizard. The remote's standalone page is at http://localhost:3001.
 
-| Command | What it does |
-|---|---|
-| `pnpm dev` | Runs both dev servers in parallel |
-| `pnpm dev:host-app` / `pnpm dev:passport-form` | Runs one app |
-| `pnpm build` | Production builds into each app's `dist/` |
-| `pnpm preview` | Serves both production builds on the same ports (run `pnpm build` first) |
-| `pnpm typecheck` | `tsc --noEmit` in both apps and the contract package |
+| Command                                        | What it does                                                             |
+| ---------------------------------------------- | ------------------------------------------------------------------------ |
+| `pnpm dev`                                     | Runs both dev servers in parallel                                        |
+| `pnpm dev:host-app` / `pnpm dev:passport-form` | Runs one app                                                             |
+| `pnpm build`                                   | Production builds into each app's `dist/`                                |
+| `pnpm preview`                                 | Serves both production builds on the same ports (run `pnpm build` first) |
+| `pnpm typecheck`                               | `tsc --noEmit` in both apps and the contract package                     |
+| `pnpm lint`                                    | ESLint across the repository                                             |
+| `pnpm format` / `pnpm format:check`            | Formats with Prettier / checks formatting without writing                |
 
 ### Ports
 
-| App | Port | Notes |
-|---|---|---|
-| host-app | 3000 | `strictPort`: fails instead of moving to another port |
-| passport-form | 3001 | `strictPort`: the host expects the remote here |
+| App           | Port | Notes                                                 |
+| ------------- | ---- | ----------------------------------------------------- |
+| host-app      | 3000 | `strictPort`: fails instead of moving to another port |
+| passport-form | 3001 | `strictPort`: the host expects the remote here        |
 
-### Environment variables (optional)
+### Configuration (optional)
 
 Both configs read these from `process.env` when the dev server starts or the build runs:
 
-| Variable | App | Default |
-|---|---|---|
-| `PASSPORT_FORM_MANIFEST_URL` | host-app | `http://localhost:3001/mf-manifest.json` |
-| `HOST_APP_ORIGIN` | passport-form | `http://localhost:3000`, the only origin allowed by CORS |
+| Variable                     | App           | Default                                                  |
+| ---------------------------- | ------------- | -------------------------------------------------------- |
+| `PASSPORT_FORM_MANIFEST_URL` | host-app      | `http://localhost:3001/mf-manifest.json`                 |
+| `HOST_APP_ORIGIN`            | passport-form | `http://localhost:3000`, the only origin allowed by CORS |
+
+- **Changing the remote's URL after a build:** set `passportFormManifestUrl` in the host's `runtime-config.json`. It's served from `public/` in development and copied into `dist/` by the build. The host reads it before rendering and registers the remote with that URL. The file is `{}` by default, which means no override.
+- **CORS:** `HOST_APP_ORIGIN` sets the CORS header of the remote's dev and preview servers. In a real deployment that header comes from whatever server hosts the remote's files.
 
 ## Module Federation
 
@@ -97,64 +105,72 @@ Both apps use `@module-federation/rsbuild-plugin` (Module Federation 2.0).
 
 ### Host vs remote
 
-| | passport-form (remote) | host-app (host) |
-|---|---|---|
-| `name` | `passport_form` | `host_app` |
-| Role | Owns the passport form, its rules and file handling | Owns the page, wizard, ID form and payload |
-| Config | `exposes`, `filename: 'remoteEntry.js'` | `remotes: { passport_form: 'passport_form@<manifest URL>' }` |
-| `shared` | `react`, `react-dom`: `singleton: true`, `requiredVersion: '^18.3.1'` | same |
-| `experiments.asyncStartup` | `true` | `true` |
-| `dts` | `false` | `false` |
-| Other | `output.assetPrefix: 'auto'`, `server.cors.origin` allowlist | `shareStrategy: 'loaded-first'` |
+|                            | passport-form (remote)                                                | host-app (host)                                              |
+| -------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `name`                     | `passport_form`                                                       | `host_app`                                                   |
+| Role                       | Owns the passport form, its rules and file handling                   | Owns the page, wizard, ID form and payload                   |
+| Config                     | `exposes`, `filename: 'remoteEntry.js'`                               | `remotes: { passport_form: 'passport_form@<manifest URL>' }` |
+| `shared`                   | `react`, `react-dom`: `singleton: true`, `requiredVersion: '^18.3.1'` | same                                                         |
+| `experiments.asyncStartup` | `true`                                                                | `true`                                                       |
+| `dts`                      | `false`                                                               | `false`                                                      |
+| Other                      | `output.assetPrefix: 'auto'`, `server.cors.origin` allowlist          | `shareStrategy: 'loaded-first'`                              |
 
 ### Exposed module
 
-`passport_form/PassportForm` maps to `apps/passport-form/src/PassportForm/PassportForm.tsx` and is a default export. The host loads it with `React.lazy(() => import('passport_form/PassportForm'))` inside `Suspense` and an error boundary (`host-app/src/remote/`).
+`passport_form/PassportForm` maps to `apps/passport-form/src/PassportForm/PassportForm.tsx` and is a default export.
+
+The host loads it with the Module Federation runtime's `loadRemote('passport_form/PassportForm')`, wrapped in `React.lazy` inside `Suspense` and an error boundary (`host-app/src/remote/`). It uses `loadRemote` rather than a static `import()`:
+
+- **Why:** the bundler's `import()` keeps a failed remote module failed for the life of the page, while the runtime makes a fresh request.
+- **Result:** if the remote is down, **Try again** recovers in place once it's back, with no page reload.
 
 ### How loading works
 
 1. The host starts with its own React. `asyncStartup` loads shared modules before app code runs.
-2. When Step 1 renders, the runtime fetches `mf-manifest.json` from :3001. This is the request CORS allows.
-3. It then loads `remoteEntry.js` and the exposed chunk, and initializes the remote with the host's React. The remote's own React chunks aren't downloaded.
+2. Before rendering, the host applies `runtime-config.json`, if it names a different remote URL.
+3. When Step 1 renders, the runtime fetches `mf-manifest.json` from :3001. This is the request CORS allows.
+4. It then loads `remoteEntry.js` and the exposed chunk, and initializes the remote with the host's React. The remote's own React chunks aren't downloaded.
 
 ### Why these settings
 
 - **`asyncStartup`:** without it, the host fails at startup (runtime error `RUNTIME-006`) because shared React isn't loaded yet.
 - **`assetPrefix: 'auto'`:** without it, the production host requests the remote's chunks from its own origin.
-- **`loaded-first`:** with the default `version-first`, the host fetches the remote at startup to compare versions, so a down remote leaves the whole host blank. With `loaded-first`, the host renders and the error boundary shows "The passport form couldn't be loaded" with a **Reload page** button; Next stays disabled.
+- **`loaded-first`:** with the default `version-first`, the host fetches the remote at startup to compare versions, so a down remote leaves the whole host blank. With `loaded-first`, the host renders and the error boundary shows "The passport form couldn't be loaded" with a **Try again** button; Next stays disabled.
 - **`dts: false`:** types come from `passport-contract` instead of Module Federation's type generation, which would need the remote's dev server running whenever the host type-checks.
 
 ## Integration contract
 
-The contract lives in `packages/passport-contract/src/index.ts`. Both apps import it with `import type`, so it adds nothing to either bundle. The host types the federated module with it in `remotes.d.ts`, so a contract change breaks the host's build, not its runtime.
+The contract lives in `packages/passport-contract/src/index.ts`. Both apps import it with `import type`, so it adds nothing to either bundle. The host types the module returned by `loadRemote` with `PassportFormProps`, so a contract change breaks the host's build, not its runtime.
 
 ### PassportForm API
 
 ```ts
 interface PassportFormProps {
   onChange: (state: PassportFormState) => void; // called once after mount, then on every change
-  initialValue?: PassportFormValues;            // read on mount only (e.g. after Back)
+  initialValue?: PassportFormValues; // read on mount only (e.g. after Back)
 }
 
 type PassportFormState =
-  | { valid: true; data: PassportData }          // complete: document is never null
-  | { valid: false; data: PassportFormValues };  // may be partial
+  | { valid: true; data: PassportData } // complete: document is never null
+  | { valid: false; data: PassportFormValues }; // may be partial
 
 interface PassportFormValues {
   passportNumber: string;
   firstName: string;
   lastName: string;
-  issueDate: string;   // YYYY-MM-DD or ''
-  expiryDate: string;  // YYYY-MM-DD or ''
+  issueDate: string; // YYYY-MM-DD or ''
+  expiryDate: string; // YYYY-MM-DD or ''
   document: PassportDocument | null;
 }
 
-interface PassportData extends PassportFormValues { document: PassportDocument }
+interface PassportData extends PassportFormValues {
+  document: PassportDocument;
+}
 
 interface PassportDocument {
   fileName: string;
   mimeType: 'application/pdf' | 'image/png' | 'image/jpeg' | 'image/jpg';
-  base64: string;      // raw base64, no "data:...;base64," prefix
+  base64: string; // raw base64, no "data:...;base64," prefix
 }
 ```
 
@@ -166,25 +182,30 @@ interface PassportDocument {
 
 All passport rules live in the remote (`validation.ts`): one Zod schema drives both the inline errors (through React Hook Form) and the reported `valid` flag. The host never re-checks them.
 
-| Field | Rule |
-|---|---|
-| Passport number, first name, last name | Required. Trimmed; whitespace only counts as empty |
-| Issue date, expiry date | Required, complete `YYYY-MM-DD` dates |
-| Expiry date | Strictly after the issue date (equal dates fail). Compared as ISO strings, so no time zone shifts |
-| Passport document | Exactly one file. MIME type `application/pdf`, `image/png`, `image/jpeg` or `image/jpg`. Not empty. At most 5 MB |
+| Field                                  | Rule                                                                                                                                           |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Passport number, first name, last name | Required. Trimmed; whitespace only counts as empty                                                                                             |
+| Issue date, expiry date                | Required, complete `YYYY-MM-DD` dates                                                                                                          |
+| Expiry date                            | Strictly after the issue date (equal dates fail). Compared as ISO strings, so no time zone shifts                                              |
+| Passport document                      | Exactly one file. MIME type `application/pdf`, `image/png`, `image/jpeg` or `image/jpg`. Not empty. At most 5 MB. Contents must match the type |
 
 **When errors appear:**
+
 - Validity is recalculated on every change, from the first render.
 - An error message appears once its field has been changed or left (`mode: 'all'`).
 - Changing the issue date re-checks the expiry date if it already has a value.
 
-**File checks** run before the file is read, because the `accept` attribute only filters the file picker.
+**File checks:**
+
+- **Before reading:** type, size and file count are checked before the file is read, because the `accept` attribute only filters the file picker.
+- **After reading:** the file's first bytes must match its type (`%PDF-`, the PNG signature or the JPEG signature). The browser derives the type from the file extension, so this catches a renamed file.
+- **On restore:** the schema runs the same content check on restored data.
 
 **Host ID form** (`host-app/src/id-info/idInfo.ts`):
 
-| Field | Rule |
-|---|---|
-| ID number | Required, trimmed |
+| Field       | Rule                                                                                                         |
+| ----------- | ------------------------------------------------------------------------------------------------------------ |
+| ID number   | Required, trimmed                                                                                            |
 | Nationality | One of 10 options with ISO 3166-1 alpha-2 codes (`EG`, `IN`, `JO`, `LB`, `PK`, `PH`, `SA`, `AE`, `GB`, `US`) |
 
 ## Wizard behavior
@@ -195,7 +216,7 @@ All wizard state lives in one reducer: `host-app/src/wizard/wizardReducer.ts`.
    - Renders the federated form.
    - **Next** is disabled until the form reports `valid: true`. A short hint explains why, linked to the button with `aria-describedby`.
 2. **Step 2, ID details:**
-   - **Submit** is disabled unless the passport report is valid *and* the ID rules pass.
+   - **Submit** is disabled unless the passport report is valid _and_ the ID rules pass.
    - **Back** returns to Step 1.
 3. **Submit:**
    - Builds the payload and logs it to the console with `console.log`.
@@ -203,6 +224,7 @@ All wizard state lives in one reducer: `host-app/src/wizard/wizardReducer.ts`.
    - **Start over** resets everything.
 
 **Safeguards:**
+
 - Transitions are also checked in the reducer: `next` and `submitted` are ignored when they aren't allowed. A disabled button isn't the only guard.
 - On each step change, focus moves to the new step's heading.
 
@@ -242,6 +264,12 @@ Built by `host-app/src/submission/buildPayload.ts`. It copies each field explici
   - The form reports `valid: true` on mount, so Next is enabled immediately.
 - **ID values** live in the reducer too, so they survive Back and then Next.
 - **The file** is read in the remote with `FileReader` and stored as `{ fileName, mimeType, base64 }`. The browser `File` object never reaches the host.
+- **Page refresh** (`host-app/src/wizard/persistence.ts`):
+  - **Where:** wizard state is saved to `sessionStorage`, which keeps it in this tab only and clears it when the tab closes.
+  - **When:** the text fields and ID values are saved on every change; the file is saved under its own key, only when it changes.
+  - **Cleared:** on Submit and on Start over.
+  - **Restoring:** a refresh reopens Step 1 with everything restored. The passport form re-validates the restored data itself before Next is enabled; the host never trusts a saved `valid` flag.
+  - **Large files:** browsers limit `sessionStorage` to a few megabytes. A file too large to store isn't saved and has to be chosen again after a refresh.
 - **Testing the restore without the host:** the remote's standalone page has a **Remount with reported data** button.
 
 ## Assumptions
@@ -249,7 +277,7 @@ Built by `host-app/src/submission/buildPayload.ts`. It copies each field explici
 - **Files:**
   - The 5 MB limit is our choice; the assessment doesn't set one. Base64 adds about a third to the size.
   - `base64` is the raw string without the data-URL prefix, because `mimeType` is a separate field.
-  - `mimeType` is the type the browser reports for the file, which it derives from the file extension.
+  - `mimeType` is the type the browser reports for the file, which it derives from the file extension. The file's first bytes must also match that type.
 - **Dates:** no rules beyond "expiry after issue". Future issue dates and expired passports are accepted.
 - **Text:** values are trimmed. No format patterns for the passport or ID number, and no uppercasing.
 - **Nationality:** a curated list of 10 countries, not the full ISO list.
@@ -262,6 +290,11 @@ Built by `host-app/src/submission/buildPayload.ts`. It copies each field explici
   - **pnpm catalog** (`pnpm-workspace.yaml`): both apps take React from one definition, so the shared singleton can't end up with two versions.
   - **React 18.3.1 pinned exactly:** the assessment requires React 18, and current Rsbuild templates default to React 19.
   - **TypeScript `~6.0.3`**: typescript-eslint doesn't support TypeScript 7 yet.
+  - **`@module-federation/enhanced` pinned to exactly the plugin's version:** the host calls `loadRemote` and `registerRemotes` directly, and they must use the same runtime the build plugin injects.
+- **Tooling:**
+  - **ESLint 9** with typescript-eslint, React Hooks rules and jsx-a11y, plus Prettier. ESLint 9 rather than 10, because eslint-plugin-jsx-a11y doesn't support 10 yet.
+  - **Line endings:** `.editorconfig` and `.gitattributes` keep LF everywhere.
+- **Development reload:** the host's `dev.watchFiles` watches the remote's `src/` and reloads the host page when it changes. The remote's own hot reload doesn't reach a page that loaded it through Module Federation, and the plugin's built-in live reload depends on its type-generation pipeline, which this project doesn't use.
 - **Separation of concerns:**
   - **Remote owns editing, host owns persistence.** The form keeps its own field state, and the host stores snapshots and passes `initialValue` back. No fully controlled form across the Module Federation boundary.
   - **Libraries:** React Hook Form + Zod in the remote only, where the form is complex. The two-field ID form uses a small plain function. Neither library is shared or loaded by the host.
@@ -270,14 +303,5 @@ Built by `host-app/src/submission/buildPayload.ts`. It copies each field explici
   - **CSS Modules** keep class names scoped.
   - The remote keeps its design values on its own root element, never `:root`, and paints its own card surface, so it reads well on any host background.
   - The remote's page styles are imported only by its standalone entry, never by the exposed module.
-
-## Known limitations
-
-- **Not yet included:** lint/format configuration and automated tests.
-- **Failed remote load:** no in-place retry. When a remote module fails to load, the Module Federation runtime keeps rethrowing the original error for the life of the page, so the fallback offers a page reload.
-- **No live reload into the host:** editing the remote hot-reloads its own page on :3001, but not inside the host; refresh the host to see changes. The plugin's cross-app live reload is off by default.
-- **No persistence:** wizard state is held in memory, so refreshing the page loses entered data.
-- **File type check:** based on the MIME type the browser reports, not the file's actual content.
-- **Missing `lang` attribute:** the generated HTML has no `lang` on `<html>`.
-- **English only:** single light theme, no RTL support.
-- **Fixed at start or build time:** the remote URL and CORS origin come from the environment when the dev server starts or the build runs, not at runtime.
+  - **Light and dark themes:** both apps follow the system setting (`prefers-color-scheme`). The remote's dark values are scoped to its form, like its light ones.
+  - **`<html lang="en">`** comes from a minimal page template in each app. Rsbuild still injects the title, meta tags and scripts into it.

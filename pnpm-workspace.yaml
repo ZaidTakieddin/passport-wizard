@@ -13,6 +13,9 @@ catalog:
   '@types/node': ^22.20.5
   '@rsbuild/core': ^2.2.11
   '@rsbuild/plugin-react': ^2.1.1
-  '@module-federation/rsbuild-plugin': ^2.9.2
+  # Exact versions: the host calls the runtime API directly, and it must be the same
+  # Module Federation runtime the build plugin injects.
+  '@module-federation/rsbuild-plugin': 2.9.2
+  '@module-federation/enhanced': 2.9.2
   # Tilde: TypeScript minors can introduce breaking changes.
   typescript: ~6.0.3

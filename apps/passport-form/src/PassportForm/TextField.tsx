@@ -7,9 +7,19 @@ type TextFieldProps = {
   label: string;
   error?: string;
   registration: UseFormRegisterReturn;
-} & Pick<InputHTMLAttributes<HTMLInputElement>, 'type' | 'autoComplete' | 'autoCapitalize' | 'spellCheck' | 'min'>;
+} & Pick<
+  InputHTMLAttributes<HTMLInputElement>,
+  'type' | 'autoComplete' | 'autoCapitalize' | 'spellCheck' | 'min'
+>;
 
-export default function TextField({ id, label, error, registration, type = 'text', ...inputProps }: TextFieldProps) {
+export default function TextField({
+  id,
+  label,
+  error,
+  registration,
+  type = 'text',
+  ...inputProps
+}: TextFieldProps) {
   const errorId = `${id}-error`;
 
   return (

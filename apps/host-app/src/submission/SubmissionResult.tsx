@@ -20,11 +20,13 @@ export default function SubmissionResult({ payload }: { payload: SubmissionPaylo
         Your passport and ID details were combined into this JSON payload. It was also logged to the browser
         console.
       </p>
-      <pre className={styles.payload} tabIndex={0} aria-label="Submitted JSON payload">
+      <pre className={styles.payload}>
         <code>{JSON.stringify(payload, shortenBase64, 2)}</code>
       </pre>
       {isShortened && (
-        <p className={styles.note}>The document&apos;s base64 is shortened here. The console has the full value.</p>
+        <p className={styles.note}>
+          The document&apos;s base64 is shortened here. The console has the full value.
+        </p>
       )}
     </div>
   );

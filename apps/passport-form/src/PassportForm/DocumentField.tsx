@@ -3,7 +3,13 @@ import { useRef, useState, type ChangeEvent } from 'react';
 import { useController, type Control } from 'react-hook-form';
 import styles from './PassportForm.module.css';
 import { readFileAsBase64 } from './readFileAsBase64';
-import { ACCEPTED_MIME_TYPES, getFileSelectionError, isAcceptedMimeType } from './validation';
+import {
+  ACCEPTED_MIME_TYPES,
+  CONTENT_MISMATCH_MESSAGE,
+  getFileSelectionError,
+  hasMatchingSignature,
+  isAcceptedMimeType,
+} from './validation';
 
 // File extensions are listed too, for systems that don't map them to MIME types.
 const ACCEPT = [...ACCEPTED_MIME_TYPES, '.pdf', '.png', '.jpg', '.jpeg'].join(',');
@@ -63,6 +69,10 @@ export default function DocumentField({ id, control }: DocumentFieldProps) {
     try {
       const base64 = await readFileAsBase64(file);
       if (selection !== latestSelection.current) return;
+      if (!hasMatchingSignature({ mimeType, base64 })) {
+        setSelectionError(CONTENT_MISMATCH_MESSAGE);
+        return;
+      }
       field.onChange({ fileName: file.name, mimeType, base64 });
     } catch {
       if (selection !== latestSelection.current) return;
@@ -82,7 +92,8 @@ export default function DocumentField({ id, control }: DocumentFieldProps) {
 
   let status = 'No file chosen.';
   if (isReading) status = 'Reading file…';
-  else if (passportDocument) status = `${passportDocument.fileName} (${TYPE_LABELS[passportDocument.mimeType]})`;
+  else if (passportDocument)
+    status = `${passportDocument.fileName} (${TYPE_LABELS[passportDocument.mimeType]})`;
 
   return (
     <div className={styles.field}>

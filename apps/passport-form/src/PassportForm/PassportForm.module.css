@@ -12,6 +12,7 @@
   --pf-error: #b42318;
   --pf-radius: 0.375rem;
 
+  color-scheme: light;
   box-sizing: border-box;
   max-width: 40rem;
   padding: 1.25rem 1rem;
@@ -24,6 +25,22 @@
 @media (min-width: 36rem) {
   .form {
     padding: 1.75rem;
+  }
+}
+
+/* Follows the user's system theme. Still scoped to the form, like the light values. */
+@media (prefers-color-scheme: dark) {
+  .form {
+    --pf-text: #e3e8ee;
+    --pf-muted: #9aa6b5;
+    --pf-border: #4a5563;
+    --pf-frame: #2a3441;
+    --pf-surface: #161d26;
+    --pf-accent: #6b9cff;
+    --pf-on-accent: #0b1220;
+    --pf-error: #ff8a80;
+
+    color-scheme: dark;
   }
 }
 

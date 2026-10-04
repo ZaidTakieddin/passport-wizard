@@ -31,7 +31,9 @@ export default function App() {
         >
           Remount with reported data
         </button>
-        <pre className={styles.output}>{state ? JSON.stringify(state, shortenBase64, 2) : 'Nothing reported yet.'}</pre>
+        <pre className={styles.output}>
+          {state ? JSON.stringify(state, shortenBase64, 2) : 'Nothing reported yet.'}
+        </pre>
       </section>
     </main>
   );

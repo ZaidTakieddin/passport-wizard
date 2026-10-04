@@ -29,8 +29,7 @@ export interface PassportData extends PassportFormValues {
 
 /** What the form reports to its host. `valid: true` guarantees complete `PassportData`. */
 export type PassportFormState =
-  | { valid: true; data: PassportData }
-  | { valid: false; data: PassportFormValues };
+  { valid: true; data: PassportData } | { valid: false; data: PassportFormValues };
 
 export interface PassportFormProps {
   /** Called once after mount and again whenever validity or data changes. */

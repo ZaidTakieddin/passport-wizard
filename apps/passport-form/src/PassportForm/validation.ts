@@ -44,6 +44,32 @@ export function nextDay(date: string): string | undefined {
   return day.toISOString().slice(0, 10);
 }
 
+// First bytes of each format. The browser derives a file's type from its extension, so these
+// catch a renamed file whose contents are something else.
+const FILE_SIGNATURES: Record<PassportDocumentMimeType, readonly number[]> = {
+  'application/pdf': [0x25, 0x50, 0x44, 0x46, 0x2d], // "%PDF-"
+  'image/png': [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+  'image/jpeg': [0xff, 0xd8, 0xff],
+  'image/jpg': [0xff, 0xd8, 0xff],
+};
+
+export const CONTENT_MISMATCH_MESSAGE = 'This file isn’t a valid PDF, PNG or JPEG.';
+
+/** Whether the file's contents start like the format its MIME type claims. */
+export function hasMatchingSignature({
+  mimeType,
+  base64,
+}: Pick<PassportDocument, 'mimeType' | 'base64'>): boolean {
+  let header: string;
+  try {
+    // 12 base64 characters decode to the first 9 bytes, enough for every signature above.
+    header = atob(base64.slice(0, 12));
+  } catch {
+    return false;
+  }
+  return FILE_SIGNATURES[mimeType].every((byte, index) => header.charCodeAt(index) === byte);
+}
+
 /** Checks a file selection before it is read. Returns an error message, or null if it is acceptable. */
 export function getFileSelectionError(files: ArrayLike<Pick<File, 'type' | 'size'>>): string | null {
   if (files.length !== 1) return 'Upload one file only.';
@@ -66,7 +92,11 @@ const documentSchema = z
     (document) => document === null || isAcceptedMimeType(document.mimeType),
     'Upload a PDF, PNG or JPEG file.',
   )
-  .refine((document) => document === null || document.base64.length > 0, 'This file is empty. Choose another file.');
+  .refine(
+    (document) => document === null || document.base64.length > 0,
+    'This file is empty. Choose another file.',
+  )
+  .refine((document) => document === null || hasMatchingSignature(document), CONTENT_MISMATCH_MESSAGE);
 
 /** Every rule for the passport form. Used for inline errors and for the validity reported to the host. */
 export const passportSchema = z

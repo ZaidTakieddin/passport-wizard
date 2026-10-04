@@ -12,6 +12,6 @@
   overflow-x: auto;
   padding: 1rem;
   border-radius: 0.5rem;
-  background: #e7ebf0;
+  background: var(--page-panel);
   font-size: 0.8125rem;
 }

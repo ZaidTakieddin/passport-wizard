@@ -1,0 +1,2 @@
+# Prettier already skips what .gitignore lists (node_modules, dist).
+pnpm-lock.yaml

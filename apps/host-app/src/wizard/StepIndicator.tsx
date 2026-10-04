@@ -7,7 +7,8 @@ const STEPS = [
 ] as const;
 
 export default function StepIndicator({ current }: { current: WizardStep }) {
-  const currentIndex = current === 'submitted' ? STEPS.length : STEPS.findIndex(({ step }) => step === current);
+  const currentIndex =
+    current === 'submitted' ? STEPS.length : STEPS.findIndex(({ step }) => step === current);
 
   return (
     <ol className={styles.steps} aria-label="Progress">

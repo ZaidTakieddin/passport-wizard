@@ -35,5 +35,7 @@ export default defineConfig({
   },
   html: {
     title: 'Passport Form',
+    // A minimal template only to set <html lang>; Rsbuild still injects the title, meta tags and scripts.
+    template: './index.html',
   },
 });

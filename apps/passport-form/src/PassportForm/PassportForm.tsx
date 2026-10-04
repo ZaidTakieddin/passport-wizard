@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { PassportFormProps, PassportFormValues } from 'passport-contract';
 import { useId } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import DocumentField from './DocumentField';
 import styles from './PassportForm.module.css';
 import TextField from './TextField';
@@ -14,7 +14,6 @@ export default function PassportForm({ onChange, initialValue }: PassportFormPro
   const {
     register,
     control,
-    watch,
     trigger,
     getValues,
     formState: { errors },
@@ -25,7 +24,8 @@ export default function PassportForm({ onChange, initialValue }: PassportFormPro
     mode: 'all',
   });
 
-  const values = watch();
+  // Every field has a default value, so the watched values are always complete.
+  const values = useWatch({ control }) as PassportFormValues;
   useReportState(getPassportFormState(values), onChange);
 
   return (
