@@ -7,8 +7,6 @@ type TextFieldProps = {
   label: string;
   hint?: string;
   error?: string;
-  /** Shows the value in upper case, matching how the form stores it. */
-  uppercase?: boolean;
   registration: UseFormRegisterReturn;
 } & Pick<
   InputHTMLAttributes<HTMLInputElement>,
@@ -20,7 +18,6 @@ export default function TextField({
   label,
   hint,
   error,
-  uppercase = false,
   registration,
   type = 'text',
   ...inputProps
@@ -42,7 +39,7 @@ export default function TextField({
       <input
         id={id}
         type={type}
-        className={uppercase ? `${styles.input} ${styles.uppercase}` : styles.input}
+        className={styles.input}
         required
         aria-invalid={Boolean(error)}
         aria-describedby={describedBy || undefined}

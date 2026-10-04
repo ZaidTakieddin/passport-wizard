@@ -106,10 +106,6 @@
   font: inherit;
 }
 
-.uppercase {
-  text-transform: uppercase;
-}
-
 .input[aria-invalid='true'] {
   border-color: var(--pf-error);
   box-shadow: inset 0 0 0 1px var(--pf-error);

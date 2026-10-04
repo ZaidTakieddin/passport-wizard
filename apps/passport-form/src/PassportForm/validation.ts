@@ -82,18 +82,22 @@ export function getFileSelectionError(files: ArrayLike<Pick<File, 'type' | 'size
 
 const requiredText = (message: string) => z.string().trim().min(1, message);
 
-// ICAO Doc 9303 Part 4: the passport number occupies positions 1–9 of the machine-readable
-// zone, so it has at most 9 characters from A–Z and 0–9. Spaces and special characters are
-// not part of it. Lower-case input is accepted and stored in upper case.
-const PASSPORT_NUMBER_MAX_LENGTH = 9;
+// Passport number: 3 to 9 characters, capital letters A–Z and digits 0–9 only. The maximum and
+// the character set follow ICAO Doc 9303 Part 4: the number fills positions 1–9 of the
+// machine-readable zone, which has no lower-case letters, spaces or symbols. The minimum of 3 is
+// a project rule. Lower-case letters are rejected, not converted.
+export const PASSPORT_NUMBER_MIN_LENGTH = 3;
+export const PASSPORT_NUMBER_MAX_LENGTH = 9;
+
+const PASSPORT_NUMBER_LENGTH_MESSAGE = `A passport number has ${PASSPORT_NUMBER_MIN_LENGTH} to ${PASSPORT_NUMBER_MAX_LENGTH} characters.`;
 
 const passportNumberSchema = z
   .string()
   .trim()
-  .toUpperCase()
   .min(1, 'Enter your passport number.')
-  .regex(/^[A-Z0-9]*$/, 'Use letters and digits only, with no spaces or symbols.')
-  .max(PASSPORT_NUMBER_MAX_LENGTH, `A passport number has at most ${PASSPORT_NUMBER_MAX_LENGTH} characters.`);
+  .regex(/^[A-Z0-9]*$/, 'Use capital letters A–Z and digits 0–9 only, with no spaces or symbols.')
+  .min(PASSPORT_NUMBER_MIN_LENGTH, PASSPORT_NUMBER_LENGTH_MESSAGE)
+  .max(PASSPORT_NUMBER_MAX_LENGTH, PASSPORT_NUMBER_LENGTH_MESSAGE);
 
 const requiredDate = (message: string) =>
   z.string().min(1, message).regex(ISO_DATE, 'Enter a complete date.');
@@ -131,11 +135,11 @@ export const passportSchema = z
     }
   });
 
-// Same normalisation as the schema applies to valid data, so reports look alike either way.
+// Same trimming as the schema applies to valid data, so reports look alike either way.
 function normalizeValues(values: PassportFormValues): PassportFormValues {
   return {
     ...values,
-    passportNumber: values.passportNumber.trim().toUpperCase(),
+    passportNumber: values.passportNumber.trim(),
     firstName: values.firstName.trim(),
     lastName: values.lastName.trim(),
   };

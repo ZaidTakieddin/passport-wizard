@@ -182,13 +182,13 @@ interface PassportDocument {
 
 All passport rules live in the remote (`validation.ts`): one Zod schema drives both the inline errors (through React Hook Form) and the reported `valid` flag. The host never re-checks them.
 
-| Field                   | Rule                                                                                                                                                      |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Passport number         | Required. At most 9 characters, letters A–Z and digits 0–9 only, no spaces or symbols ([ICAO Doc 9303](#passport-and-id-standards)). Stored in upper case |
-| First name, last name   | Required. Trimmed; whitespace only counts as empty                                                                                                        |
-| Issue date, expiry date | Required, complete `YYYY-MM-DD` dates                                                                                                                     |
-| Expiry date             | Strictly after the issue date (equal dates fail). Compared as ISO strings, so no time zone shifts                                                         |
-| Passport document       | Exactly one file. MIME type `application/pdf`, `image/png`, `image/jpeg` or `image/jpg`. Not empty. At most 5 MB. Contents must match the type            |
+| Field                   | Rule                                                                                                                                                                                            |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Passport number         | Required. 3 to 9 characters, capital letters A–Z and digits 0–9 only ([ICAO Doc 9303](#passport-and-id-standards)). Lower case, spaces and symbols are rejected; surrounding spaces are trimmed |
+| First name, last name   | Required. Trimmed; whitespace only counts as empty                                                                                                                                              |
+| Issue date, expiry date | Required, complete `YYYY-MM-DD` dates                                                                                                                                                           |
+| Expiry date             | Strictly after the issue date (equal dates fail). Compared as ISO strings, so no time zone shifts                                                                                               |
+| Passport document       | Exactly one file. MIME type `application/pdf`, `image/png`, `image/jpeg` or `image/jpg`. Not empty. At most 5 MB. Contents must match the type                                                  |
 
 **When errors appear:**
 
@@ -213,8 +213,8 @@ All passport rules live in the remote (`validation.ts`): one Zod schema drives b
 
 - **Passport number, [ICAO Doc 9303 Part 4](https://www.icao.int/sites/default/files/publications/DocSeries/9303_p4_cons_en.pdf):**
   - In the passport's machine-readable zone, the number fills positions 1–9, so it can't be longer than 9 characters.
-  - The zone only allows A–Z and 0–9, and spaces or special characters are replaced by a filler character, so neither is part of the number. The [Abu Dhabi Department of Health identifier standard](https://www.doh.gov.ae/-/media/Feature/Resources/Health-Information-Exchange-standards/Standard-1---Patient-Identifier---Emirates-ID-and-Passport.ashx) states the same: alphanumeric, with no spaces or special characters.
-  - ICAO sets no minimum length, so none is enforced.
+  - The zone only allows capital A–Z and 0–9, and spaces or special characters are replaced by a filler character, so neither is part of the number. Lower-case input is rejected rather than converted, so what the user types is exactly what's submitted. The [Abu Dhabi Department of Health identifier standard](https://www.doh.gov.ae/-/media/Feature/Resources/Health-Information-Exchange-standards/Standard-1---Patient-Identifier---Emirates-ID-and-Passport.ashx) states the same: alphanumeric, with no spaces or special characters.
+  - **Minimum of 3 characters:** a project rule, not part of the standard. ICAO sets no minimum.
 - **Emirates ID:**
   - **Format:** `784-YYYY-NNNNNNN-N`, where 784 is the UAE's ISO 3166 numeric country code. The Abu Dhabi Department of Health standard defines it as a 15-digit number (example `784198012345678`).
   - **Year segment:** `YYYY` is usually the holder's birth year, but not always, so it's only checked as four digits.
@@ -291,7 +291,7 @@ Built by `host-app/src/submission/buildPayload.ts`. It copies each field explici
   - `base64` is the raw string without the data-URL prefix, because `mimeType` is a separate field.
   - `mimeType` is the type the browser reports for the file, which it derives from the file extension. The file's first bytes must also match that type.
 - **Dates:** no rules beyond "expiry after issue". Future issue dates and expired passports are accepted.
-- **Text:** values are trimmed. The passport number is stored in upper case, because the ICAO character set has no lower-case letters. Names have no format rules.
+- **Text:** values are trimmed. The passport number must already be in capital letters; nothing is converted. Names have no format rules.
 - **Nationality:** a curated list of 10 countries, not the full ISO list.
 - **Output:** the payload is logged and displayed. Nothing is sent to a server.
 - **Step 2 values:** kept when going Back and then Next again.

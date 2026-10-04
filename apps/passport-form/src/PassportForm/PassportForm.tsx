@@ -6,7 +6,14 @@ import DocumentField from './DocumentField';
 import styles from './PassportForm.module.css';
 import TextField from './TextField';
 import { useReportState } from './useReportState';
-import { EMPTY_PASSPORT_VALUES, getPassportFormState, nextDay, passportSchema } from './validation';
+import {
+  EMPTY_PASSPORT_VALUES,
+  getPassportFormState,
+  nextDay,
+  PASSPORT_NUMBER_MAX_LENGTH,
+  PASSPORT_NUMBER_MIN_LENGTH,
+  passportSchema,
+} from './validation';
 
 export default function PassportForm({ onChange, initialValue }: PassportFormProps) {
   // Unique ids, because the host may render other forms on the same page.
@@ -37,10 +44,9 @@ export default function PassportForm({ onChange, initialValue }: PassportFormPro
         <TextField
           id={`${id}-passportNumber`}
           label="Passport number"
-          hint="Up to 9 letters and digits, as printed on your passport."
+          hint={`${PASSPORT_NUMBER_MIN_LENGTH} to ${PASSPORT_NUMBER_MAX_LENGTH} capital letters (A–Z) and digits (0–9), as printed on your passport.`}
           error={errors.passportNumber?.message}
           registration={register('passportNumber')}
-          uppercase
           autoComplete="off"
           autoCapitalize="characters"
           spellCheck={false}
